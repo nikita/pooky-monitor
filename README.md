@@ -4,11 +4,10 @@ Monitor Supreme for new Pooky/Tohru
 
 ## Quick Start
 
-- Rename .env.example → .env
-- Replace WEBHOOK_URL_HERE in .env with your Discord webhook URL.
-- Replace localhost with your proxy if using a proxy.
-
 ```bash
+# Rename config.example.json → config.json
+mv config.example.json config.json
+
 # Install dependencies
 npm install
 

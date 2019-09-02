@@ -1,0 +1,7 @@
+{
+  "proxies": [],
+  "discord": {
+    "enabled": false,
+    "webhook_url": ""
+  }
+}

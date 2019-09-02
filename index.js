@@ -1,13 +1,7 @@
-require("dotenv").config();
-
 const Discord = require("discord.js");
 const rp = require("request-promise");
 const cheerio = require("cheerio");
-const { WEBHOOK_URL, PROXY } = process.env;
-const webhookSplit = WEBHOOK_URL.match(
-  /discordapp.com\/api\/webhooks\/([^\/]+)\/([^\/]+)/
-);
-const webhook = new Discord.WebhookClient(webhookSplit[1], webhookSplit[2]);
+const config = require("./config");
 
 class PookyMonitor {
   constructor(proxy = "localhost") {
@@ -84,13 +78,19 @@ class PookyMonitor {
       : console.log(`Monitoring pooky without proxy!`);
 
     let lastStatus = false;
+
+    // Get our supreme region for this task.
     await this.getSupremeRegion();
+
     while (true) {
       this.isPookyOn();
+
       // Pooky now on.
       if (this.pookyOn && !lastStatus) {
         lastStatus = true;
-        this.sendWebhook(this.pookyUrl, this.tohru);
+        if (config.discord.enabled) {
+          this.sendWebhook(this.pookyUrl, this.tohru);
+        }
         // Pooky now off.
       } else if (!this.pookyOn && lastStatus) {
         lastStatus = false;
@@ -103,6 +103,11 @@ class PookyMonitor {
   }
 
   sendWebhook(url, tohru) {
+    const webhookSplit = config.discord.webhook_url.match(
+      /discordapp.com\/api\/webhooks\/([^\/]+)\/([^\/]+)/
+    );
+    const webhook = new Discord.WebhookClient(webhookSplit[1], webhookSplit[2]);
+
     const color = "#ABC2D2";
     const hash = url.match(/pooky.min.*(?=\.)/);
     webhook.send(
@@ -142,8 +147,16 @@ class PookyMonitor {
 }
 
 const main = () => {
-  const pookyMonitor = new PookyMonitor(PROXY);
-  pookyMonitor.monitorPooky();
+  // Check if we have any proxies.
+  if (Array.isArray(config.proxies) && config.proxies.length) {
+    for (proxy of config.proxies) {
+      const pookyMonitor = new PookyMonitor(proxy);
+      pookyMonitor.monitorPooky();
+    }
+  } else {
+    const pookyMonitor = new PookyMonitor();
+    pookyMonitor.monitorPooky();
+  }
 };
 
 main();
