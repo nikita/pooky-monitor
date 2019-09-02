@@ -11,9 +11,11 @@
   "author": "никита",
   "license": "MIT",
   "dependencies": {
+    "chalk": "^2.4.2",
     "cheerio": "^1.0.0-rc.3",
     "discord.js": "^11.5.1",
     "dotenv": "^8.1.0",
+    "moment": "^2.24.0",
     "request": "^2.88.0",
     "request-promise": "^4.2.4"
   },

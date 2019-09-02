@@ -1,6 +1,7 @@
 const Discord = require("discord.js");
 const rp = require("request-promise");
 const cheerio = require("cheerio");
+const log = require("./logger");
 const config = require("./config");
 
 class PookyMonitor {
@@ -33,7 +34,7 @@ class PookyMonitor {
 
       this.supremeRegion = $("body").hasClass("eu") ? "🇬🇧" : "🇺🇸";
     } catch (err) {
-      console.log(err);
+      log(`getSupremeRegion() Error : ${err}`, "error");
     }
   }
 
@@ -68,14 +69,14 @@ class PookyMonitor {
       // Should only get hit when no pooky found.
       this.pookyFound = false;
     } catch (err) {
-      console.log(err);
+      log(`checkForPooky() Error : ${err}`, "error");
     }
   }
 
   async monitorPooky() {
     this.proxy
-      ? console.log(`Monitoring pooky with proxy ${this.proxy}!`)
-      : console.log(`Monitoring pooky without proxy!`);
+      ? log(`Monitoring pooky with proxy ${this.proxy}`)
+      : log(`Monitoring pooky without proxy`);
 
     let lastStatus = false;
 
