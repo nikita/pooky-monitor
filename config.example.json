@@ -1,4 +1,6 @@
 {
+  "monitorDelay": 1000,
+  "retryDelay": 5000,
   "proxies": [],
   "discord": {
     "enabled": false,

@@ -36,8 +36,7 @@ class PookyMonitor {
       this.supremeRegion = $("body").hasClass("eu") ? "🇬🇧" : "🇺🇸";
     } catch (err) {
       this.log(`getSupremeRegion() Error : ${err}`, "error");
-      // Sleep for 5 seconds.
-      await this.sleep(5000);
+      await this.sleep(config.retryDelay);
     }
   }
 
@@ -73,8 +72,7 @@ class PookyMonitor {
       this.pookyFound = false;
     } catch (err) {
       log(`checkForPooky() Error : ${err}`, "error");
-      // Sleep for 5 seconds.
-      await this.sleep(5000);
+      await this.sleep(config.retryDelay);
     }
   }
 
@@ -103,8 +101,7 @@ class PookyMonitor {
         this.tohru = "";
         this.pookyUrl = "";
       }
-      // Sleep for 1 second.
-      await this.sleep(1000);
+      await this.sleep(config.monitorDelay);
     }
   }
 
