@@ -1,11 +1,12 @@
 const Discord = require("discord.js");
 const rp = require("request-promise");
 const cheerio = require("cheerio");
-const log = require("./classes/logger");
+const logger = require("./classes/logger");
 const config = require("./config");
 
 class PookyMonitor {
-  constructor(proxy = "localhost") {
+  constructor(id, proxy = "localhost") {
+    this.id = id;
     this.proxy = this.formatProxy(proxy);
 
     this.session = rp.defaults({
@@ -34,7 +35,7 @@ class PookyMonitor {
 
       this.supremeRegion = $("body").hasClass("eu") ? "🇬🇧" : "🇺🇸";
     } catch (err) {
-      log(`getSupremeRegion() Error : ${err}`, "error");
+      this.log(`getSupremeRegion() Error : ${err}`, "error");
       // Sleep for 5 seconds.
       await this.sleep(5000);
     }
@@ -79,8 +80,8 @@ class PookyMonitor {
 
   async monitorPooky() {
     this.proxy
-      ? log(`Monitoring pooky with proxy ${this.proxy}`)
-      : log(`Monitoring pooky without proxy`);
+      ? this.log(`Monitoring pooky with proxy ${this.proxy}`)
+      : this.log(`Monitoring pooky without proxy`);
 
     let lastStatus = false;
 
@@ -149,13 +150,17 @@ class PookyMonitor {
       else return "http://" + proxySplit[0] + ":" + proxySplit[1];
     } else return undefined;
   }
+
+  log(msg) {
+    logger(`[Task ${this.id}] ${msg}`);
+  }
 }
 
 const main = () => {
   // Check if we have any proxies.
   if (Array.isArray(config.proxies) && config.proxies.length) {
-    for (proxy of config.proxies) {
-      const pookyMonitor = new PookyMonitor(proxy);
+    for (const [i, proxy] of config.proxies.entries()) {
+      const pookyMonitor = new PookyMonitor(i, proxy);
       pookyMonitor.monitorPooky();
     }
   } else {
