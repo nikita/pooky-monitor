@@ -1,32 +1,149 @@
 require("dotenv").config();
 
 const Discord = require("discord.js");
-const webhookSplit = process.env.WEBHOOK_URL.match(
+const rp = require("request-promise");
+const cheerio = require("cheerio");
+const { WEBHOOK_URL, PROXY } = process.env;
+const webhookSplit = WEBHOOK_URL.match(
   /discordapp.com\/api\/webhooks\/([^\/]+)\/([^\/]+)/
 );
 const webhook = new Discord.WebhookClient(webhookSplit[1], webhookSplit[2]);
 
-const sendWebhook = (url, tohru, region) => {
-  const color = "#ABC2D2";
-  const hash = url.match(/pooky.min.*(?=\.)/);
-  webhook.send(
-    new Discord.RichEmbed()
-      .setColor(color)
-      .setAuthor("Pooky — Monitor", "https://i.imgur.com/7ShkUT5.png")
-      .setDescription("A new pooky script was detected on Supreme.")
-      .addField("URL", url, true)
-      .addField("Tohru", tohru, true)
-      .setTimestamp()
-      .setFooter(`Hash: ${hash} | Region: ${region}`)
-  );
-};
+class PookyMonitor {
+  constructor(proxy = "localhost") {
+    this.proxy = this.formatProxy(proxy);
+
+    this.session = rp.defaults({
+      headers: {
+        "Accept-Language": "en-US,en,en-GB;q=0.9",
+        Accept:
+          "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3",
+        "Cache-Control": "no-cache"
+      },
+      proxy: this.proxy,
+      timeout: 5000
+    });
+
+    this.tohru = "";
+    this.pookyUrl = "";
+    this.pookyOn = false;
+    this.supremeRegion;
+  }
+
+  async getSupremeRegion() {
+    try {
+      const response = await this.session.get(
+        `https://www.supremenewyork.com?p=${new Date().getTime()}`
+      );
+      const $ = cheerio.load(response, { xmlMode: false });
+
+      this.supremeRegion = $("body").hasClass("eu") ? "🇬🇧" : "🇺🇸";
+    } catch (err) {
+      console.log(err);
+    }
+  }
+
+  async isPookyOn() {
+    try {
+      const response = await this.session.get(
+        `https://www.supremenewyork.com?p=${new Date().getTime()}`
+      );
+      const $ = cheerio.load(response, { xmlMode: false });
+      const scripts = $("script").get();
+
+      for (let script of scripts) {
+        // Check for tohru.
+        if (
+          script.children[0] &&
+          script.children[0].data &&
+          script.children[0].data.includes("supremetohru")
+        ) {
+          this.tohru = script.children[0].data.match(/(?<=")[^"]+(?=")/)[0];
+        }
+
+        // Check for pooky url.
+        if (
+          script.attribs.src != null &&
+          script.attribs.src.includes("pooky")
+        ) {
+          this.pookyUrl = `https://${script.attribs.src.replace("//", "")}`;
+          this.pookyOn = true;
+          return;
+        }
+      }
+      // Should only get hit when no pooky found.
+      this.pookyOn = false;
+    } catch (err) {
+      console.log(err);
+    }
+  }
+
+  async monitorPooky() {
+    this.proxy
+      ? console.log(`Monitoring pooky with proxy ${this.proxy}!`)
+      : console.log(`Monitoring pooky without proxy!`);
+
+    let lastStatus = false;
+    await this.getSupremeRegion();
+    while (true) {
+      this.isPookyOn();
+      // Pooky now on.
+      if (this.pookyOn && !lastStatus) {
+        lastStatus = true;
+        this.sendWebhook(this.pookyUrl, this.tohru);
+        // Pooky now off.
+      } else if (!this.pookyOn && lastStatus) {
+        lastStatus = false;
+        this.tohru = "";
+        this.pookyUrl = "";
+      }
+      // Sleep for 1 second.
+      await this.sleep(1000);
+    }
+  }
+
+  sendWebhook(url, tohru) {
+    const color = "#ABC2D2";
+    const hash = url.match(/pooky.min.*(?=\.)/);
+    webhook.send(
+      new Discord.RichEmbed()
+        .setColor(color)
+        .setAuthor("Pooky — Monitor", "https://i.imgur.com/7ShkUT5.png")
+        .setDescription("A new pooky script was detected on Supreme.")
+        .addField("URL", url, true)
+        .addField("Tohru", tohru, true)
+        .setTimestamp()
+        .setFooter(`Hash: ${hash} | Region: ${this.supremeRegion}`)
+    );
+  }
+
+  sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  formatProxy(proxy) {
+    if (proxy && ["localhost", ""].indexOf(proxy) < 0) {
+      proxy = proxy.replace(" ", "_");
+      const proxySplit = proxy.split(":");
+      if (proxySplit.length > 3)
+        return (
+          "http://" +
+          proxySplit[2] +
+          ":" +
+          proxySplit[3] +
+          "@" +
+          proxySplit[0] +
+          ":" +
+          proxySplit[1]
+        );
+      else return "http://" + proxySplit[0] + ":" + proxySplit[1];
+    } else return undefined;
+  }
+}
 
 const main = () => {
-  sendWebhook(
-    "https://d17ol771963kd3.cloudfront.net/assets/pooky.min.bf511c63b0cb9dbdbf3f.js",
-    "696d1bdc2500351afaa2443e86f3ad5d19a460f5d891e67691dd85e1ab4a40b54b4b98e75facbe45203749bcb9442c5c",
-    "🇬🇧"
-  );
+  const pookyMonitor = new PookyMonitor(PROXY);
+  pookyMonitor.monitorPooky();
 };
 
 main();

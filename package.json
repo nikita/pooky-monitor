@@ -1,16 +1,23 @@
 {
   "name": "pooky-monitor",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node ./index"
+    "start": "node ./index",
+    "dev": "nodemon ./index"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "никита",
+  "license": "MIT",
   "dependencies": {
+    "cheerio": "^1.0.0-rc.3",
     "discord.js": "^11.5.1",
-    "dotenv": "^8.1.0"
+    "dotenv": "^8.1.0",
+    "request": "^2.88.0",
+    "request-promise": "^4.2.4"
+  },
+  "devDependencies": {
+    "nodemon": "^1.19.1"
   }
 }
