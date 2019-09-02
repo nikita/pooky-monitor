@@ -5,7 +5,7 @@ const logger = require("./classes/logger");
 const config = require("./config");
 
 class PookyMonitor {
-  constructor(id, proxy = "localhost") {
+  constructor(id = 0, proxy = "localhost") {
     this.id = id;
     this.proxy = this.formatProxy(proxy);
 
