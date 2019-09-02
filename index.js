@@ -1,7 +1,7 @@
 const Discord = require("discord.js");
 const rp = require("request-promise");
 const cheerio = require("cheerio");
-const log = require("./logger");
+const log = require("./classes/logger");
 const config = require("./config");
 
 class PookyMonitor {
@@ -35,6 +35,8 @@ class PookyMonitor {
       this.supremeRegion = $("body").hasClass("eu") ? "🇬🇧" : "🇺🇸";
     } catch (err) {
       log(`getSupremeRegion() Error : ${err}`, "error");
+      // Sleep for 5 seconds.
+      await this.sleep(5000);
     }
   }
 
@@ -70,6 +72,8 @@ class PookyMonitor {
       this.pookyFound = false;
     } catch (err) {
       log(`checkForPooky() Error : ${err}`, "error");
+      // Sleep for 5 seconds.
+      await this.sleep(5000);
     }
   }
 
