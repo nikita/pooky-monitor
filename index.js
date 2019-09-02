@@ -20,7 +20,7 @@ class PookyMonitor {
 
     this.tohru = "";
     this.pookyUrl = "";
-    this.pookyOn = false;
+    this.pookyFound = false;
     this.supremeRegion;
   }
 
@@ -37,7 +37,7 @@ class PookyMonitor {
     }
   }
 
-  async isPookyOn() {
+  async checkForPooky() {
     try {
       const response = await this.session.get(
         `https://www.supremenewyork.com?p=${new Date().getTime()}`
@@ -61,12 +61,12 @@ class PookyMonitor {
           script.attribs.src.includes("pooky")
         ) {
           this.pookyUrl = `https://${script.attribs.src.replace("//", "")}`;
-          this.pookyOn = true;
+          this.pookyFound = true;
           return;
         }
       }
       // Should only get hit when no pooky found.
-      this.pookyOn = false;
+      this.pookyFound = false;
     } catch (err) {
       console.log(err);
     }
@@ -83,16 +83,16 @@ class PookyMonitor {
     await this.getSupremeRegion();
 
     while (true) {
-      this.isPookyOn();
+      this.checkForPooky();
 
       // Pooky now on.
-      if (this.pookyOn && !lastStatus) {
+      if (this.pookyFound && !lastStatus) {
         lastStatus = true;
         if (config.discord.enabled) {
           this.sendWebhook(this.pookyUrl, this.tohru);
         }
         // Pooky now off.
-      } else if (!this.pookyOn && lastStatus) {
+      } else if (!this.pookyFound && lastStatus) {
         lastStatus = false;
         this.tohru = "";
         this.pookyUrl = "";
