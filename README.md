@@ -1,6 +1,6 @@
 # pooky-monitor
 
-Monitor Supreme for new Pooky/Tohru
+Monitor Supreme for new Pooky/Tohru. Currently supports US/GB.
 
 ## Quick Start
 
