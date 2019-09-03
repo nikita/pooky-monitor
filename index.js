@@ -23,7 +23,7 @@ class PookyMonitor {
     this.tohru = "";
     this.pookyUrl = "";
     this.pookyFound = false;
-    this.supremeRegion;
+    this.supremeRegion = "";
   }
 
   async getSupremeRegion() {
