@@ -71,7 +71,7 @@ class PookyMonitor {
       // Should only get hit when no pooky found.
       this.pookyFound = false;
     } catch (err) {
-      log(`checkForPooky() Error : ${err}`, "error");
+      this.log(`checkForPooky() Error : ${err}`, "error");
       await this.sleep(config.retryDelay);
     }
   }
