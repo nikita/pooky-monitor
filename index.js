@@ -95,6 +95,7 @@ class PookyMonitor {
         if (config.discord.enabled) {
           this.sendWebhook(this.pookyUrl, this.tohru);
         }
+        this.log(`Pooky found URL: ${this.pookyUrl} Tohru: ${this.tohru}`);
         // Pooky now off.
       } else if (!this.pookyFound && lastStatus) {
         lastStatus = false;
