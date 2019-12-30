@@ -15,6 +15,21 @@ npm install
 npm start
 ```
 
+## Running forever
+
+```bash
+# Install pm2 globally
+npm install pm2@latest -g
+# or
+yarn global add pm2
+
+# Run pooky-monitor forever with autorestart
+pm2 start ecosystem.config.js
+
+# Check pooky-monitor logs
+pm2 logs pooky-monitor
+```
+
 ## License
 
 [MIT](LICENSE)
