@@ -1,0 +1,9 @@
+{
+  "monitorDelay": 5000,
+  "retryDelay": 10000,
+  "proxies": [],
+  "discord": {
+    "enabled": false,
+    "webhook_url": ""
+  }
+}
