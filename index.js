@@ -1,13 +1,14 @@
-const Discord = require("discord.js");
+const config = require("./config");
+const { WebhookClient, RichEmbed } = require("discord.js");
 const rp = require("request-promise");
 const cheerio = require("cheerio");
 const logger = require("./classes/logger");
-const config = require("./config");
+const { sleep, formatProxy, proxiesExist } = require("./classes/utils");
 
 class PookyMonitor {
-  constructor(id = 0, proxy = "localhost") {
+  constructor(id, proxy = "localhost") {
     this.id = id;
-    this.proxy = this.formatProxy(proxy);
+    this.proxy = formatProxy(proxy);
 
     this.session = rp.defaults({
       headers: {
@@ -22,9 +23,12 @@ class PookyMonitor {
 
     this.tohru = "";
     this.pookyUrl = "";
+    this.lastStatus = false;
     this.pookyFound = false;
     this.supremeRegion = "";
   }
+
+  log = msg => logger(`[Task ${this.id}] ${msg}`);
 
   async getSupremeRegion() {
     try {
@@ -36,7 +40,7 @@ class PookyMonitor {
       this.supremeRegion = $("body").hasClass("eu") ? "🇬🇧" : "🇺🇸";
     } catch (err) {
       this.log(`getSupremeRegion() Error : ${err}`, "error");
-      await this.sleep(config.retryDelay);
+      await sleep(config.retryDelay);
     }
   }
 
@@ -64,6 +68,7 @@ class PookyMonitor {
           script.attribs.src.includes("pooky")
         ) {
           this.pookyUrl = `https://${script.attribs.src.replace("//", "")}`;
+          this.hash = this.pookyUrl.match(/pooky.min.*(?=\.)/);
           this.pookyFound = true;
           return;
         }
@@ -72,16 +77,16 @@ class PookyMonitor {
       this.pookyFound = false;
     } catch (err) {
       this.log(`checkForPooky() Error : ${err}`, "error");
-      await this.sleep(config.retryDelay);
+      await sleep(config.retryDelay);
     }
   }
 
   async monitorPooky() {
-    this.proxy
-      ? this.log(`Monitoring pooky with proxy ${this.proxy}`)
-      : this.log(`Monitoring pooky without proxy`);
-
-    let lastStatus = false;
+    this.log(
+      `Monitoring pooky ${
+        this.proxy ? `with proxy ${this.proxy}` : "without proxy"
+      }`
+    );
 
     // Get our supreme region for this task.
     await this.getSupremeRegion();
@@ -90,33 +95,36 @@ class PookyMonitor {
       this.checkForPooky();
 
       // Pooky now on.
-      if (this.pookyFound && !lastStatus) {
-        lastStatus = true;
+      if (this.pookyFound && !this.lastStatus) {
+        this.lastStatus = true;
+
+        // Send discord embed to webhook if enabled
         if (config.discord.enabled) {
-          this.sendWebhook(this.pookyUrl, this.tohru);
+          this.sendWebhook(this.pookyUrl, this.tohru, this.hash);
         }
-        this.log(`Pooky found URL: ${this.pookyUrl} Tohru: ${this.tohru}`);
+
+        this.log(
+          `Pooky found URL: ${this.pookyUrl} Tohru: ${this.tohru} Hash: ${this.hash}`
+        );
         // Pooky now off.
-      } else if (!this.pookyFound && lastStatus) {
-        lastStatus = false;
+      } else if (!this.pookyFound && this.lastStatus) {
+        this.lastStatus = false;
         this.tohru = "";
         this.pookyUrl = "";
       }
-      await this.sleep(config.monitorDelay);
+      await sleep(config.monitorDelay);
     }
   }
 
-  sendWebhook(url, tohru) {
+  sendWebhook(url, tohru, hash) {
     const webhookSplit = config.discord.webhook_url.match(
       /discordapp.com\/api\/webhooks\/([^\/]+)\/([^\/]+)/
     );
-    const webhook = new Discord.WebhookClient(webhookSplit[1], webhookSplit[2]);
+    const webhook = new WebhookClient(webhookSplit[1], webhookSplit[2]);
 
-    const color = "#ABC2D2";
-    const hash = url.match(/pooky.min.*(?=\.)/);
     webhook.send(
-      new Discord.RichEmbed()
-        .setColor(color)
+      new RichEmbed()
+        .setColor("#ABC2D2")
         .setAuthor("Pooky — Monitor", "https://i.imgur.com/7ShkUT5.png")
         .setDescription("A new pooky script was detected on Supreme.")
         .addField("URL", url, true)
@@ -125,45 +133,16 @@ class PookyMonitor {
         .setFooter(`Hash: ${hash} | Region: ${this.supremeRegion}`)
     );
   }
-
-  sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-  }
-
-  formatProxy(proxy) {
-    if (proxy && ["localhost", ""].indexOf(proxy) < 0) {
-      proxy = proxy.replace(" ", "_");
-      const proxySplit = proxy.split(":");
-      if (proxySplit.length > 3)
-        return (
-          "http://" +
-          proxySplit[2] +
-          ":" +
-          proxySplit[3] +
-          "@" +
-          proxySplit[0] +
-          ":" +
-          proxySplit[1]
-        );
-      else return "http://" + proxySplit[0] + ":" + proxySplit[1];
-    } else return undefined;
-  }
-
-  log(msg) {
-    logger(`[Task ${this.id}] ${msg}`);
-  }
 }
 
 const main = () => {
   // Check if we have any proxies.
-  if (Array.isArray(config.proxies) && config.proxies.length) {
+  if (proxiesExist(config)) {
     for (const [i, proxy] of config.proxies.entries()) {
-      const pookyMonitor = new PookyMonitor(i, proxy);
-      pookyMonitor.monitorPooky();
+      new PookyMonitor(i, proxy).monitorPooky();
     }
   } else {
-    const pookyMonitor = new PookyMonitor();
-    pookyMonitor.monitorPooky();
+    new PookyMonitor(0).monitorPooky();
   }
 };
 
